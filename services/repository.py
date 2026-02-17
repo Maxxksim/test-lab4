@@ -1,3 +1,5 @@
+from boto3.dynamodb.conditions import Key, Attr
+
 from .config import SHIPPING_TABLE_NAME
 from .db import get_dynamodb_resource
 
@@ -16,6 +18,9 @@ class ShippingRepository:
         return response.get("Item")
 
     def create_shipping(self, shipping_type: str, product_ids: list, order_id: str, status: str, due_date: datetime):
+        existing = self.get_shipping_by_order_id(order_id)
+        if existing:
+            return existing['shipping_id']
         shipping_id = str(uuid4())
         item = {
             "shipping_id": shipping_id,
@@ -41,3 +46,10 @@ class ShippingRepository:
         )
 
         return response
+
+    def get_shipping_by_order_id(self, order_id):
+        response = self.table.scan(
+            FilterExpression=Attr('order_id').eq(order_id)
+        )
+        items = response.get('Items', [])
+        return items[0] if items else None

@@ -232,8 +232,8 @@ def test_shipping_becomes_overdue_after_due_date(dynamo_resource):
 
     time.sleep(3)
 
+    shipping_service.process_shipping(shipping_id)
     updated_status = shipment.check_shipping_status()
-
     assert updated_status != initial_status
 
 

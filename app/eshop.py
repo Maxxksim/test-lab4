@@ -65,9 +65,15 @@ class ShoppingCart:
 
     def submit_cart_order(self):
         """Submit cart and return purchased product IDs."""
+
+        if not self.products:
+            raise Exception("Cannot place order: cart is empty")
+
         product_ids = []
 
         for product, count in self.products.items():
+            if not product.is_available(count):
+                raise Exception(f"Product {product} is out of stock")
             product.buy(count)
             product_ids.append(str(product))
 
