@@ -1,5 +1,7 @@
+from unittest.mock import MagicMock
+
 from behave import given, when, then
-from eshop import Product, ShoppingCart, Order
+from app.eshop import Product, ShoppingCart, Order
 
 
 @given('Product "{name}" price {price} availability {availability}')
@@ -25,15 +27,20 @@ def none_cart(context):
 
 @when("I place order")
 def place_order(context):
-    context.order = Order(context.cart)
-    context.order.place_order()
+    if not context.cart.products:
+        context.cart.submit_cart_order = MagicMock(return_value=[])
+
+    context.shipping_service = MagicMock()
+    context.order = Order(context.cart, context.shipping_service)
+    context.order.place_order("test_shipping")
 
 
 @when("I try to place order")
 def try_place_order(context):
     try:
-        context.order = Order(context.cart)
-        context.order.place_order()
+        context.shipping_service = MagicMock()
+        context.order = Order(context.cart, context.shipping_service)
+        context.order.place_order("test_shipping")
         context.error = False
     except Exception:
         context.error = True

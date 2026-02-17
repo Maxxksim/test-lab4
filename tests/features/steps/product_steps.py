@@ -1,5 +1,5 @@
 from behave import given, when, then
-from eshop import Product
+from app.eshop import Product
 
 
 @given('Product named "{name}" with price {price} and availability {availability}')
