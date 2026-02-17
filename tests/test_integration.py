@@ -2,6 +2,7 @@ import time
 import uuid
 
 import boto3
+
 from app.eshop import Product, ShoppingCart, Order, Shipment
 import random
 from services import ShippingService
@@ -68,7 +69,7 @@ def test_place_order_with_unavailable_shipping_type_fails(dynamo_resource):
     assert "Shipping type is not available" in str(excinfo.value)
 
 
-def test_when_place_order_then_shipping_in_queue(dynamo_resource):
+def test_when_place_order_then_shipping_in_queue(dynamo_resource, sqs_client):
     shipping_service = ShippingService(ShippingRepository(), ShippingPublisher())
     cart = ShoppingCart()
 
@@ -85,11 +86,6 @@ def test_when_place_order_then_shipping_in_queue(dynamo_resource):
         due_date=datetime.now(timezone.utc) + timedelta(minutes=1)
     )
 
-    sqs_client = boto3.client(
-        "sqs",
-        endpoint_url=AWS_ENDPOINT_URL,
-        region_name=AWS_REGION
-    )
     queue_url = sqs_client.get_queue_url(QueueName=SHIPPING_QUEUE)["QueueUrl"]
     response = sqs_client.receive_message(
         QueueUrl=queue_url,
@@ -297,11 +293,10 @@ def test_two_orders_compete_for_same_product(dynamo_resource):
     assert shipping_id is not None
 
 
-def test_shipping_consistency_between_repo_and_queue(dynamo_resource):
+def test_shipping_consistency_between_repo_and_queue(dynamo_resource, sqs_client):
     shipping_repo = ShippingRepository()
     shipping_service = ShippingService(shipping_repo, ShippingPublisher())
 
-    sqs_client = boto3.client("sqs", endpoint_url=AWS_ENDPOINT_URL, region_name=AWS_REGION)
     queue_url = sqs_client.get_queue_url(QueueName=SHIPPING_QUEUE)["QueueUrl"]
 
     while True:
@@ -324,14 +319,6 @@ def test_shipping_consistency_between_repo_and_queue(dynamo_resource):
 
     saved = shipping_repo.get_shipping(shipping_id)
     assert saved is not None
-
-    sqs_client = boto3.client(
-        "sqs",
-        endpoint_url=AWS_ENDPOINT_URL,
-        region_name=AWS_REGION
-    )
-
-    queue_url = sqs_client.get_queue_url(QueueName=SHIPPING_QUEUE)["QueueUrl"]
 
     response = sqs_client.receive_message(
         QueueUrl=queue_url,

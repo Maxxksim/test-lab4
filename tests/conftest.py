@@ -10,6 +10,8 @@ def setup_localstack_resources():
         "dynamodb",
         endpoint_url=AWS_ENDPOINT_URL,
         region_name=AWS_REGION,
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
     )
     existing_tables = dynamo_client.list_tables()["TableNames"]
     if SHIPPING_TABLE_NAME not in existing_tables:
@@ -22,7 +24,9 @@ def setup_localstack_resources():
         dynamo_client.get_waiter("table_exists").wait(TableName=SHIPPING_TABLE_NAME)
     sqs_client = boto3.client(
         "sqs",
-        endpoint_url=AWS_ENDPOINT_URL, region_name=AWS_REGION
+        endpoint_url=AWS_ENDPOINT_URL, region_name=AWS_REGION,
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
     )
     response = sqs_client.create_queue(QueueName=SHIPPING_QUEUE)
     queue_url = response["QueueUrl"]
@@ -36,3 +40,14 @@ def setup_localstack_resources():
 @pytest.fixture
 def dynamo_resource():
     return get_dynamodb_resource()
+
+
+@pytest.fixture(scope="session")
+def sqs_client():
+    return boto3.client(
+        "sqs",
+        endpoint_url=AWS_ENDPOINT_URL,
+        region_name=AWS_REGION,
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    )
